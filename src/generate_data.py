@@ -9,7 +9,7 @@ random.seed(42)
 def generate_dataset(n=500):
     records = []
     for i in range(n):
-        is_fraud = random.random() < 0.35  # 35% fraudulent chargebacks
+        is_fraud = random.random() < 0.35
 
         record = {
             "case_id": f"CB_{i:04d}",
@@ -22,18 +22,21 @@ def generate_dataset(n=500):
             "payment_method": random.choice(["upi", "card", "netbanking"]),
             "chargeback_fee": 250,
             "cost_of_goods": round(random.uniform(200, 15000), 2),
-            "label": 1 if is_fraud else 0  # 1 = fraudulent chargeback
+            "label": 1 if is_fraud else 0
         }
         records.append(record)
 
     df = pd.DataFrame(records)
 
-    # 80/20 train-test split — never touch test set until final eval
+    # Add 15% label noise — makes overlap realistic, avoids perfect scores
+    noise_idx = df.sample(frac=0.15, random_state=42).index
+    df.loc[noise_idx, "label"] = 1 - df.loc[noise_idx, "label"]
+
     split = int(0.8 * n)
     os.makedirs("data", exist_ok=True)
     df[:split].to_csv("data/train.csv", index=False)
     df[split:].to_csv("data/test.csv", index=False)
-    print(f"Generated {n} records → {split} train, {n-split} test")
+    print(f"Generated {n} records → {split} train, {n-split} test (15% label noise applied)")
 
 if __name__ == "__main__":
     generate_dataset()

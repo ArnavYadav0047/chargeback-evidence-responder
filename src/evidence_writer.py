@@ -1,4 +1,4 @@
-from google import genai
+from groq import Groq
 from dotenv import load_dotenv
 import os
 import time
@@ -7,11 +7,11 @@ load_dotenv()
 
 try:
     import streamlit as st
-    api_key = st.secrets["GOOGLE_API_KEY"]
+    api_key = st.secrets["GROQ_API_KEY"]
 except Exception:
-    api_key = os.environ.get("GOOGLE_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY")
 
-client = genai.Client(api_key=api_key)
+client = Groq(api_key=api_key)
 
 
 def gather_evidence(case: dict) -> dict:
@@ -57,13 +57,47 @@ for ₹{evidence['amount']}. Reference the weak evidence points. 2 sentences max
 
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
-                model="gemini-1.5-flash-latest",
-                contents=prompt
+            response = client.chat.completions.create(
+                model="qwen/qwen3.8-27b",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300
             )
-            return response.text
+            return response.choices[0].message.content
         except Exception as e:
             if attempt < 2:
                 time.sleep(3)
             else:
-                return f"Evidence generation temporarily unavailable. Decision: {decision}. Please retry in a moment."
+                return f"Evidence generation temporarily unavailable. Decision: {decision}. Please retry."
+
+
+if __name__ == "__main__":
+    test_cases = [
+        {
+            "case_id": "CB_0001",
+            "amount": 8000,
+            "delivery_confirmed": True,
+            "ip_location_match": True,
+            "device_fingerprint_match": True,
+            "customer_order_history": 12,
+            "days_to_dispute": 45,
+            "payment_method": "upi"
+        },
+        {
+            "case_id": "CB_0002",
+            "amount": 300,
+            "delivery_confirmed": False,
+            "ip_location_match": False,
+            "device_fingerprint_match": None,
+            "customer_order_history": 0,
+            "days_to_dispute": 2,
+            "payment_method": "card"
+        }
+    ]
+
+    decisions = ["FIGHT", "CONCEDE"]
+
+    for case, decision in zip(test_cases, decisions):
+        evidence = gather_evidence(case)
+        packet = write_evidence_packet(evidence, decision)
+        print(f"\n=== {case['case_id']} | Decision: {decision} ===")
+        print(packet)

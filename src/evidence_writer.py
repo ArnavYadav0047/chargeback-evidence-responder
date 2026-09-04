@@ -1,6 +1,7 @@
 from google import genai
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
@@ -14,7 +15,6 @@ client = genai.Client(api_key=api_key)
 
 
 def gather_evidence(case: dict) -> dict:
-    """Pull all relevant fields into a structured case file."""
     return {
         "case_id": case["case_id"],
         "amount": case["amount"],
@@ -29,8 +29,6 @@ def gather_evidence(case: dict) -> dict:
 
 
 def write_evidence_packet(evidence: dict, decision: str) -> str:
-    """Use Gemini to draft the evidence packet or refund note."""
-
     if evidence["missing_fields"]:
         return f"INSUFFICIENT EVIDENCE: Missing fields {evidence['missing_fields']}. Defaulting to CONCEDE."
 
@@ -57,41 +55,15 @@ Write a brief internal note explaining why we are conceding dispute {evidence['c
 for ₹{evidence['amount']}. Reference the weak evidence points. 2 sentences max.
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
-    )
-    return response.text
-
-
-if __name__ == "__main__":
-    test_cases = [
-        {
-            "case_id": "CB_0001",
-            "amount": 8000,
-            "delivery_confirmed": True,
-            "ip_location_match": True,
-            "device_fingerprint_match": True,
-            "customer_order_history": 12,
-            "days_to_dispute": 45,
-            "payment_method": "upi"
-        },
-        {
-            "case_id": "CB_0002",
-            "amount": 300,
-            "delivery_confirmed": False,
-            "ip_location_match": False,
-            "device_fingerprint_match": None,
-            "customer_order_history": 0,
-            "days_to_dispute": 2,
-            "payment_method": "card"
-        }
-    ]
-
-    decisions = ["FIGHT", "CONCEDE"]
-
-    for case, decision in zip(test_cases, decisions):
-        evidence = gather_evidence(case)
-        packet = write_evidence_packet(evidence, decision)
-        print(f"\n=== {case['case_id']} | Decision: {decision} ===")
-        print(packet)
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            if attempt < 2:
+                time.sleep(3)
+            else:
+                return f"Evidence generation temporarily unavailable. Decision: {decision}. Please retry in a moment."

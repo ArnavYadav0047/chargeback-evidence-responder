@@ -58,7 +58,7 @@ for ₹{evidence['amount']}. Reference the weak evidence points. 2 sentences max
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-1.5-flash-latest",
                 contents=prompt
             )
             return response.text

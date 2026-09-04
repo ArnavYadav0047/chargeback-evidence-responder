@@ -12,6 +12,8 @@ model_path = os.path.join(os.path.dirname(__file__), "..", "models", "risk_model
 with open(model_path, "rb") as f:
     RISK_MODEL = pickle.load(f)
 
+st.sidebar.write("Key loaded:", bool(st.secrets.get("GOOGLE_API_KEY")))
+
 FEATURES = [
     "amount", "delivery_confirmed", "ip_location_match",
     "device_fingerprint_match", "customer_order_history",

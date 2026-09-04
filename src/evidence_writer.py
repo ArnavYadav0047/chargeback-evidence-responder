@@ -3,7 +3,14 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+
+try:
+    import streamlit as st
+    api_key = st.secrets["GOOGLE_API_KEY"]
+except Exception:
+    api_key = os.environ.get("GOOGLE_API_KEY")
+
+client = genai.Client(api_key=api_key)
 
 
 def gather_evidence(case: dict) -> dict:

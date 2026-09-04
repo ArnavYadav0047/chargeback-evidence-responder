@@ -2,11 +2,14 @@ import streamlit as st
 import pickle
 import pandas as pd
 import sqlite3
+import sys, os
 from datetime import datetime
-from src.evidence_writer import gather_evidence, write_evidence_packet
-from src.decision import make_decision
+sys.path.insert(0, os.path.dirname(__file__))
+from evidence_writer import gather_evidence, write_evidence_packet
+from decision import make_decision
 
-with open("models/risk_model.pkl", "rb") as f:
+model_path = os.path.join(os.path.dirname(__file__), "..", "models", "risk_model.pkl")
+with open(model_path, "rb") as f:
     RISK_MODEL = pickle.load(f)
 
 FEATURES = [
